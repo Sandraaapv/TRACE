@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "username": "abc",
+      "password": "abcde",
+      "role": "user",
+      "createdAt": "2026-06-26T08:17:52.218Z"
+    }
+  ],
+  "admins": [
+    {
+      "username": "admin",
+      "password": "adminpassword",
+      "role": "admin",
+      "createdAt": "2026-06-26T08:20:00.000Z"
+    },
+    {
+      "username": "admin_demo",
+      "password": "adminpassword",
+      "role": "admin",
+      "createdAt": "2026-06-26T09:35:00.999Z"
+    }
+  ],
+  "sosAlerts": []
+}
