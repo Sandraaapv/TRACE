@@ -68,7 +68,7 @@ export default function SignupPage() {
       <div style={styles.formCard}>
         <div style={styles.logoContainer}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <img src="/shield-logo.png" alt="TRACE Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+            <Shield size={24} color="currentColor" style={{ color: 'var(--color-forest)' }} />
             <span style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--color-forest)', letterSpacing: '1px' }}>TRACE</span>
           </div>
           <h1 style={styles.title}>Create Account</h1>

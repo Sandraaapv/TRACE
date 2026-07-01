@@ -31,16 +31,25 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Dashboard specific variables for light theme */
-  --sidebar-bg: #F4EFE6;
-  /* Elegant ivory sidebar */
-  --sidebar-item-active-bg: #FAF7F2;
-  /* Highlights active items in body color */
-  --sidebar-item-active-text: #2D423F;
-  --sidebar-text: #4E3B31;
-  --dashboard-header-color: #2D423F;
-  --color-green-accent: #2e7d32;
-  --color-green-bg: #e2f0d9;
+  --sidebar-bg: rgba(255, 255, 255, 0.12);
+  --sidebar-item-active-bg: rgba(255, 255, 255, 0.25);
+  --sidebar-item-active-text: #0b1a16;
+  --sidebar-text: #0b1a16;
+  --dashboard-header-color: #0b1a16;
+  --color-green-accent: #1e5a44;
+  --color-green-bg: rgba(30, 90, 68, 0.08);
   --dashboard-bg-gradient: radial-gradient(circle at 60% 10%, #e2ece9 0%, #cbdcd6 100%);
+  --dashboard-bg-image: url('/light-bg.png');
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-strong: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-border-highlight: rgba(255, 255, 255, 0.25);
+  --glass-blur: blur(20px);
+  --glass-shadow: 0 8px 32px rgba(11, 26, 22, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.40);
+  --glass-text: #0b1a16;
+  --glass-text-muted: #3a4d48;
+  --forest-accent: #1e5a44;
+  --forest-accent-dim: rgba(30, 90, 68, 0.08);
 }
 
 [data-theme='dark'] {
@@ -93,6 +102,7 @@
   --glass-text-muted: rgba(180, 210, 190, 0.55);
   --forest-accent: #34d399;
   --forest-accent-dim: rgba(52, 211, 153, 0.12);
+  --dashboard-bg-image: url('/dark-bg.png');
 }
 
 [data-theme='dark'] h1,
@@ -371,8 +381,19 @@ a:hover {
   isolation: isolate;
 }
 
-.dashboard-shell[data-theme='dark'],
 .dashboard-shell {
+  --color-sand: #FAF7F2;
+  --color-earth: #0b1a16;
+  --color-earth-muted: #3a4d48;
+  --color-forest: #1e5a44;
+  --dashboard-header-color: #0b1a16;
+  --sidebar-bg: rgba(255, 255, 255, 0.12);
+  --color-white: rgba(255, 255, 255, 0.08);
+  --color-clay-light: rgba(255, 255, 255, 0.16);
+  --color-sand-light: rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-shell[data-theme='dark'] {
   --color-sand: #0a120e;
   --color-earth: #e8f5ec;
   --color-earth-muted: rgba(180, 210, 190, 0.55);
@@ -390,17 +411,19 @@ a:hover {
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  background: #070d0a;
+  background-image: var(--dashboard-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .dashboard-bg__mesh {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 90% 70% at 15% 10%, rgba(34, 88, 62, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 60% at 85% 80%, rgba(22, 58, 42, 0.32) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(16, 42, 30, 0.2) 0%, transparent 60%),
-    linear-gradient(165deg, #0a1410 0%, #060a08 45%, #0c1612 100%);
+    radial-gradient(ellipse 90% 70% at 15% 10%, rgba(34, 88, 62, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 80%, rgba(22, 58, 42, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(16, 42, 30, 0.15) 0%, transparent 60%);
 }
 
 .dashboard-bg__orb {

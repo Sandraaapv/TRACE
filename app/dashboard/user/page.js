@@ -478,7 +478,7 @@ export default function UserDashboard() {
         {/* Left Sidebar */}
         <aside style={styles.sidebar}>
           <div style={styles.sidebarLogo}>
-            <img src="/shield-logo.png" alt="TRACE Logo" style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '8px' }} />
+            <Shield size={20} color="currentColor" style={{ marginRight: '8px', color: 'var(--color-earth)' }} />
             <span style={styles.logoText}>TRACE</span>
           </div>
 
@@ -504,10 +504,6 @@ export default function UserDashboard() {
               <button onClick={toggleTheme} style={styles.profileActionBtn} title="Toggle Color Theme">
                 {theme === 'light' ? <Moon size={12} color="#ffffff" /> : <Sun size={12} color="#ffffff" />}
                 <span>Theme</span>
-              </button>
-              <button onClick={handleQuickHide} style={styles.profileActionBtn} title="Camouflage decoy exit">
-                <BookOpen size={12} color="#ffffff" />
-                <span>Hide</span>
               </button>
               <button onClick={handleLogout} style={styles.profileActionBtn} title="Lock Workspace">
                 <Lock size={12} color="#ffffff" />
@@ -614,11 +610,6 @@ export default function UserDashboard() {
             <div style={styles.headerActions}>
               <button onClick={toggleTheme} style={styles.headerThemeBtn} title="Toggle Theme Mode">
                 {theme === 'light' ? <Moon size={16} color="#ffffff" /> : <Sun size={16} color="#ffffff" />}
-              </button>
-              
-              <button onClick={handleQuickHide} style={styles.headerHideBtn} title="Quick Escape decoy swap">
-                <BookOpen size={14} color="#ffffff" />
-                <span>Hide Site</span>
               </button>
             </div>
           </header>
@@ -1547,15 +1538,20 @@ export default function UserDashboard() {
       </button>
 
       {/* Sticky/Floating Quick Escape Button */}
-      <button
-        onClick={handleQuickHide}
-        style={styles.stickyEscapeBtn}
-        title="Decoy Swapping (Escape Key)"
-      >
-        <BookOpen size={16} />
-        <span>QUICK ESCAPE</span>
-        <span style={styles.escapeBadge}>ESC</span>
-      </button>
+      <div style={styles.escapeContainer}>
+        <div style={styles.escapeInfoTooltip}>
+          Pressing the <strong>ESC key</strong> or clicking <strong>QUICK ESCAPE</strong> will instantly redirect you to a safe decoy page (Home Gardening Tips).
+        </div>
+        <button
+          onClick={handleQuickHide}
+          style={styles.stickyEscapeBtn}
+          title="Decoy Swapping (Escape Key)"
+        >
+          <BookOpen size={16} />
+          <span>QUICK ESCAPE</span>
+          <span style={styles.escapeBadge}>ESC</span>
+        </button>
+      </div>
 
       {/* SOS Alerting Modal */}
       {showSosModal && (
@@ -2475,10 +2471,32 @@ const styles = {
     letterSpacing: '0.5px',
     marginTop: '2px',
   },
-  stickyEscapeBtn: {
+  escapeContainer: {
     position: 'fixed',
     bottom: '2rem',
     right: '2rem',
+    zIndex: 999,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '0.5rem',
+  },
+  escapeInfoTooltip: {
+    backgroundColor: 'var(--glass-bg)',
+    backdropFilter: 'var(--glass-blur)',
+    WebkitBackdropFilter: 'var(--glass-blur)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)',
+    color: 'var(--color-earth)',
+    fontSize: '0.72rem',
+    fontWeight: '600',
+    padding: '0.6rem 0.85rem',
+    borderRadius: '10px',
+    maxWidth: '240px',
+    textAlign: 'right',
+    lineHeight: '1.45',
+  },
+  stickyEscapeBtn: {
     backgroundColor: 'var(--color-terracotta)',
     color: '#ffffff',
     border: 'none',
@@ -2488,7 +2506,6 @@ const styles = {
     fontWeight: '700',
     fontSize: '0.9rem',
     boxShadow: '0 4px 15px rgba(225, 29, 72, 0.4)',
-    zIndex: 100,
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
