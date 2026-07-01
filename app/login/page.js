@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, User, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import DashboardBackground from '../components/DashboardBackground';
 
 function LoginForm() {
   const router = useRouter();
@@ -67,7 +68,8 @@ function LoginForm() {
   };
 
   return (
-    <div style={styles.pageContainer}>
+    <div className="dashboard-shell" style={styles.pageContainer}>
+      <DashboardBackground />
       {/* Quick Hide Button */}
       <button onClick={handleQuickHide} style={styles.quickHideBtn}>
         🌿 Quick Exit
@@ -81,67 +83,6 @@ function LoginForm() {
           </div>
           <h1 style={styles.title}>Secure Login</h1>
           <p style={styles.subtitle}>Enter credentials to access your console</p>
-        </div>
-
-        {/* Autofill Demo Credentials */}
-        <div style={{
-          backgroundColor: 'var(--color-sand-light)',
-          border: '1px solid var(--color-clay-light)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.75rem',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-          fontSize: '0.8rem',
-        }}>
-          <span style={{ fontWeight: 'bold', color: 'var(--color-earth-muted)' }}>🔑 Developer Demo Autofill:</span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setRole('user');
-                setUsername('abc');
-                setPassword('abcde');
-                setError('');
-              }}
-              style={{
-                flex: 1,
-                padding: '0.35rem',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--color-white)',
-                border: '1px solid var(--color-clay)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                color: 'var(--color-forest)',
-              }}
-            >
-              Survivor Portal
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRole('admin');
-                setUsername('admin');
-                setPassword('adminpassword');
-                setError('');
-              }}
-              style={{
-                flex: 1,
-                padding: '0.35rem',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--color-white)',
-                border: '1px solid var(--color-clay)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                color: 'var(--color-forest)',
-              }}
-            >
-              Admin Portal
-            </button>
-          </div>
         </div>
 
         {success && <div style={styles.successAlert}>{success}</div>}
@@ -223,6 +164,68 @@ function LoginForm() {
           </button>
         </form>
 
+        {/* Autofill Demo Credentials */}
+        <div style={{
+          backgroundColor: 'var(--color-sand-light)',
+          border: '1px solid var(--color-clay-light)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.75rem',
+          marginTop: '1.5rem',
+          marginBottom: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          fontSize: '0.8rem',
+        }}>
+          <span style={{ fontWeight: 'bold', color: 'var(--color-earth-muted)' }}>🔑 Developer Demo Autofill:</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setRole('user');
+                setUsername('abc');
+                setPassword('abcde');
+                setError('');
+              }}
+              style={{
+                flex: 1,
+                padding: '0.35rem',
+                fontSize: '0.75rem',
+                backgroundColor: 'var(--color-white)',
+                border: '1px solid var(--color-clay)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                color: 'var(--color-forest)',
+              }}
+            >
+              Survivor Portal
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole('admin');
+                setUsername('admin');
+                setPassword('adminpassword');
+                setError('');
+              }}
+              style={{
+                flex: 1,
+                padding: '0.35rem',
+                fontSize: '0.75rem',
+                backgroundColor: 'var(--color-white)',
+                border: '1px solid var(--color-clay)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                color: 'var(--color-forest)',
+              }}
+            >
+              Admin Portal
+            </button>
+          </div>
+        </div>
+
         <div style={styles.footerLink}>
           Don't have a secure account?{' '}
           <Link href="/signup" style={styles.link}>
@@ -248,7 +251,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: 'var(--color-sand)',
+    background: 'transparent',
     padding: '2rem',
     position: 'relative',
     fontFamily: 'var(--font-sans)',
@@ -279,10 +282,12 @@ const styles = {
     transition: 'var(--transition)',
   },
   formCard: {
-    backgroundColor: 'var(--color-white)',
+    backgroundColor: 'rgba(7,14,9,0.52)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 30px 0 rgba(80,200,120,0.04), inset 0 1px 0 rgba(255,255,255,0.05)',
     borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-clay-light)',
-    boxShadow: 'var(--shadow-lg)',
     padding: '2.5rem',
     width: '100%',
     maxWidth: '460px',

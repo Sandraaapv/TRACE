@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import DashboardBackground from '../../components/DashboardBackground';
 import {
   Shield, User, LogOut, ShieldAlert, Clock, MapPin, AlertCircle,
   Volume2, VolumeX, CheckCircle, Navigation, ExternalLink,
@@ -18,6 +19,7 @@ export default function AdminDashboard() {
   const [isMuted, setIsMuted] = useState(false);
   const [adminActiveTab, setAdminActiveTab] = useState('dashboard'); // 'dashboard', 'users', 'logs', 'settings'
   const [theme, setTheme] = useState('light');
+  const [audioSuspended, setAudioSuspended] = useState(false);
 
   // Audio Context Ref for Web Audio API synthesizer
   const audioCtxRef = useRef(null);
@@ -31,6 +33,24 @@ export default function AdminDashboard() {
     const savedTheme = localStorage.getItem('trace_theme') || 'light';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  // Resume Audio Context on click/keypress if suspended
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().then(() => {
+          setAudioSuspended(false);
+        });
+      }
+    };
+
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    return () => {
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -117,6 +137,10 @@ export default function AdminDashboard() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
+
+      if (ctx.state === 'suspended') {
+        setAudioSuspended(true);
+      }
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -231,7 +255,7 @@ export default function AdminDashboard() {
   // Theme-specific style variables
   const styles = {
     container: {
-      backgroundColor: isDark ? '#0c0d12' : 'var(--color-sand)',
+      background: 'transparent',
       minHeight: '100vh',
       display: 'flex',
       fontFamily: 'var(--font-sans)',
@@ -241,8 +265,8 @@ export default function AdminDashboard() {
     // Sidebar Style (Like second pic, light grey/white and clean)
     sidebar: {
       width: '260px',
-      backgroundColor: isDark ? '#13141b' : '#ffffff',
-      borderRight: isDark ? '1px solid #20222e' : '1px solid var(--color-clay-light)',
+      backgroundColor: isDark ? 'var(--sidebar-bg)' : '#ffffff',
+      borderRight: isDark ? '1px solid var(--color-clay-light)' : '1px solid var(--color-clay-light)',
       display: 'flex',
       flexDirection: 'column',
       padding: '2rem 1.25rem',
@@ -250,6 +274,8 @@ export default function AdminDashboard() {
       position: 'sticky',
       top: 0,
       zIndex: 10,
+      backdropFilter: isDark ? 'blur(20px)' : 'none',
+      WebkitBackdropFilter: isDark ? 'blur(20px)' : 'none',
     },
     sidebarLogo: {
       display: 'flex',
@@ -400,14 +426,16 @@ export default function AdminDashboard() {
       marginBottom: '2rem',
     },
     metricCard: {
-      backgroundColor: isDark ? '#13141b' : '#ffffff',
-      border: isDark ? '1px solid #20222e' : '1px solid var(--color-clay-light)',
+      backgroundColor: isDark ? 'var(--color-white)' : '#ffffff',
+      border: isDark ? '1px solid var(--color-clay-light)' : '1px solid var(--color-clay-light)',
       borderRadius: '12px',
       padding: '1.5rem',
       display: 'flex',
       alignItems: 'center',
       gap: '1.25rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      backdropFilter: isDark ? 'blur(16px)' : 'none',
+      WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
     },
     metricIconWrapper: {
       width: '46px',
@@ -442,11 +470,13 @@ export default function AdminDashboard() {
       marginBottom: '2rem',
     },
     gridCard: {
-      backgroundColor: isDark ? '#13141b' : '#ffffff',
-      border: isDark ? '1px solid #20222e' : '1px solid var(--color-clay-light)',
+      backgroundColor: isDark ? 'var(--color-white)' : '#ffffff',
+      border: isDark ? '1px solid var(--color-clay-light)' : '1px solid var(--color-clay-light)',
       borderRadius: '12px',
       padding: '1.5rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      backdropFilter: isDark ? 'blur(16px)' : 'none',
+      WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
     },
     cardTitleRow: {
       display: 'flex',
@@ -471,7 +501,7 @@ export default function AdminDashboard() {
     },
     // Quick Actions Balance Card (Sleek Dark box on right of second pic)
     balanceCard: {
-      backgroundColor: isDark ? '#20222e' : '#111827',
+      backgroundColor: isDark ? 'var(--color-sand-light)' : '#111827',
       borderRadius: '12px',
       padding: '1.5rem',
       color: '#ffffff',
@@ -479,6 +509,9 @@ export default function AdminDashboard() {
       flexDirection: 'column',
       height: '100%',
       justifyContent: 'space-between',
+      border: isDark ? '1px solid var(--color-clay-light)' : 'none',
+      backdropFilter: isDark ? 'blur(16px)' : 'none',
+      WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
     },
     balanceTitle: {
       fontSize: '0.75rem',
@@ -520,11 +553,13 @@ export default function AdminDashboard() {
     },
     // Activity Table section
     tableCard: {
-      backgroundColor: isDark ? '#13141b' : '#ffffff',
-      border: isDark ? '1px solid #20222e' : '1px solid var(--color-clay-light)',
+      backgroundColor: isDark ? 'var(--color-white)' : '#ffffff',
+      border: isDark ? '1px solid var(--color-clay-light)' : '1px solid var(--color-clay-light)',
       borderRadius: '12px',
       padding: '1.5rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      backdropFilter: isDark ? 'blur(16px)' : 'none',
+      WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
     },
     activityTable: {
       width: '100%',
@@ -598,7 +633,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div style={styles.container}>
+    <div className="dashboard-shell" style={styles.container}>
+      <DashboardBackground />
       
       {/* 2-Column Sidebar Layout */}
       <aside style={styles.sidebar}>
@@ -689,14 +725,21 @@ export default function AdminDashboard() {
 
         {/* Flashing Banner for SOS */}
         {hasAlerts && (
-          <div style={styles.flashBanner}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <ShieldAlert size={18} />
-              <span>WARNING: {activeAlerts.length} LIVE DISTRESS SIGNAL(S) ACTIVE. COORDINATES RECORDED.</span>
+          <div style={{ ...styles.flashBanner, flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem', padding: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldAlert size={18} />
+                <span>WARNING: {activeAlerts.length} LIVE DISTRESS SIGNAL(S) ACTIVE. COORDINATES RECORDED.</span>
+              </div>
+              <button onClick={toggleMute} style={{ border: 'none', background: isDark ? '#13141b' : '#ffffff', color: isDark ? '#e2e8f0' : 'var(--color-terracotta)', fontWeight: '700', padding: '0.35rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                {isMuted ? 'UNMUTE ALARM SIREN' : 'MUTE ALARM SIREN'}
+              </button>
             </div>
-            <button onClick={toggleMute} style={{ border: 'none', background: isDark ? '#13141b' : '#ffffff', color: isDark ? '#e2e8f0' : 'var(--color-terracotta)', fontWeight: '700', padding: '0.35rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
-              {isMuted ? 'UNMUTE ALARM SIREN' : 'MUTE ALARM SIREN'}
-            </button>
+            {audioSuspended && (
+              <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#fef08a', marginTop: '0.25rem' }}>
+                🔊 Browser audio is muted/suspended. Click anywhere on the page to unmute and trigger the wailing alert.
+              </div>
+            )}
           </div>
         )}
 

@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import DashboardBackground from '../../components/DashboardBackground';
+import { generateChatResponse, computeThreatLevel } from '@/lib/chatEngine';
 import {
   Shield, Cpu, Key, Landmark, HelpCircle, User, LogOut,
   AlertTriangle, Check, Upload, Trash2, ShieldAlert,
   LayoutDashboard, Activity, TrendingUp, Plus, ChevronRight,
-  BookOpen, Lock, Send, Sun, Moon, Settings
+  BookOpen, Lock, Send, Sun, Moon, Settings, Users
 } from 'lucide-react';
 
 export default function UserDashboard() {
@@ -14,17 +16,20 @@ export default function UserDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState('dark');
+  const chatSessionRef = useRef({ counters: {}, lastCategory: null });
 
   // SOS trigger state
   const [showSosModal, setShowSosModal] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [sosStatus, setSosStatus] = useState('idle'); // 'idle', 'counting', 'sending', 'success', 'error'
   const countdownIntervalRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const [dragActive, setDragActive] = useState(false);
 
   // Theme Sync
   useEffect(() => {
-    const savedTheme = localStorage.getItem('trace_theme') || 'light';
+    const savedTheme = localStorage.getItem('trace_theme') || 'dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
@@ -74,6 +79,26 @@ export default function UserDashboard() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Drag & drop handlers for Evidence Vault
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
 
   // --- SOS Logic ---
   const triggerSosAlert = () => {
@@ -162,6 +187,14 @@ export default function UserDashboard() {
     }
   ]);
   const [chatInput, setChatInput] = useState('');
+
+  // Auto-scroll chat window
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
   const [threatMetrics, setThreatMetrics] = useState({
     physical: 0,
     coercion: 15,
@@ -256,102 +289,32 @@ export default function UserDashboard() {
     const textLower = chatInput.toLowerCase();
     setChatInput('');
 
-    // Simulate AI response
-    setTimeout(() => {
-      let physInc = 0;
-      let coerInc = 0;
-      let finInc = 0;
-      let survInc = 0;
-
-      if (/hit|punch|hurt|kill|harm|beat|slap|physical|abuse|force|weapon|push|kick/.test(textLower)) physInc = 40;
-      if (/control|isolate|yell|shout|ignore|insult|threaten|blame|screamed|angry|jealous|wear|go out/.test(textLower)) coerInc = 35;
-      if (/money|bank|job|work|funds|spend|credit|wallet|pay|allowance|stole|allow|account/.test(textLower)) finInc = 45;
-      if (/phone|location|track|spy|camera|hacked|password|messages|device|texting|gps|screen/.test(textLower)) survInc = 50;
-
-      setThreatMetrics(prev => {
-        const nextMetrics = {
-          physical: Math.min(100, prev.physical + physInc),
-          coercion: Math.min(100, prev.coercion + coerInc),
-          financial: Math.min(100, prev.financial + finInc),
-          surveillance: Math.min(100, prev.surveillance + survInc)
-        };
-        
-        const maxScore = Math.max(nextMetrics.physical, nextMetrics.coercion, nextMetrics.financial, nextMetrics.surveillance);
-        if (maxScore > 70 || nextMetrics.physical > 40) {
-          setThreatLevel('SEVERE DANGER');
-        } else if (maxScore > 35) {
-          setThreatLevel('MODERATE RISK');
-        } else {
-          setThreatLevel('LOW RISK');
-        }
-        return nextMetrics;
-      });
-
-      // AI Advice generation based on keywords
-      let aiResponseText = "";
-      const newRoadmapItems = [];
-
-      // Physical Threat
-      if (physInc > 0) {
-        aiResponseText = "URGENT SAFETY PROTOCOL: Physical safety markers have been identified. Your security is paramount. Memorize local shelter addresses and have a physical escape route mapped. If you feel you are in immediate threat, trigger our emergency SOS.";
-        newRoadmapItems.push(
-          { id: 1, text: "Map evacuation routes and memorize addresses of the closest domestic violence shelter.", severity: "high" },
-          { id: 2, text: "Prepare a physical safety bag (ID, cash, medication) stored in a secret location outside your home.", severity: "high" }
-        );
-      } 
-      
-      // Surveillance Threat
-      if (survInc > 0) {
-        aiResponseText = (aiResponseText ? aiResponseText + " " : "") + "DEVICE INTEGRITY ALERT: Indicators of device tracking/monitoring detected. Abusers frequently monitor texts and location coordinates. Safely check your phone settings, clear your history, or switch to browsing in private incognito tabs.";
-        newRoadmapItems.push(
-          { id: 3, text: "Audit location sharing on your phone and disable unknown tracking services.", severity: "high" },
-          { id: 4, text: "Change passwords for critical accounts (email, banking) from a safe public computer.", severity: "medium" }
-        );
-      } 
-
-      // Financial Threat
-      if (finInc > 0) {
-        aiResponseText = (aiResponseText ? aiResponseText + " " : "") + "FINANCIAL RESTRICTION LOGGED: Financial sabotage or banking surveillance detected. Opening a separate personal bank account with paperless statements is a critical step towards independence. Review funding on the Recovery tab.";
-        newRoadmapItems.push(
-          { id: 5, text: "Establish a new personal bank account at a different financial institution with paperless billing.", severity: "medium" },
-          { id: 6, text: "Request a credit freeze to block accounts from being opened under your name without authorization.", severity: "low" }
-        );
-      } 
-
-      // Coercion/Emotional Threat
-      if (coerInc > 0 && physInc === 0) {
-        aiResponseText = (aiResponseText ? aiResponseText + " " : "") + "COERCIVE CONTROL LOGGED: Markers of social isolation or psychological control are present. Remember that this behavior is intended to isolate you and is not your fault. Establishing safe contact channels is recommended.";
-        newRoadmapItems.push(
-          { id: 7, text: "Establish a safe physical word signal with a neighbor to notify them if you need assistance.", severity: "medium" },
-          { id: 8, text: "Reach out to a professional counselor or advocate via local support hotlines.", severity: "low" }
-        );
-      }
-
-      // Default/Fallback context-aware response if no flags
-      if (!aiResponseText) {
-        aiResponseText = `Thank you for sharing. Based on "${chatInput.substring(0, 30)}...", I am parsing threat variables. Let me know if your partner is restricting your movement, monitoring devices, or controlling your funds, so I can map your safety roadmap.`;
-        newRoadmapItems.push(
-          { id: 9, text: "Document dates, details, and safe backups of all incidents in the LockVault.", severity: "low" }
-        );
-      }
-
-      // Update safety roadmap with unique new recommendations
-      setSafetyRoadmap(prev => {
-        const existingTexts = prev.map(item => item.text);
-        const uniqueNewItems = newRoadmapItems.filter(item => !existingTexts.includes(item.text));
-        if (uniqueNewItems.length > 0) {
-          return [...uniqueNewItems, ...prev].slice(0, 6); // Cap at 6 items
-        }
-        return prev;
-      });
-
-      const aiMsg = {
-        sender: 'ai',
-        text: aiResponseText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    // Use chatEngine to generate response
+    const response = generateChatResponse(chatInput, chatSessionRef.current);
+    // Update threat metrics
+    setThreatMetrics(prev => {
+      const next = {
+        physical: Math.min(100, prev.physical + (response.increments?.physical || 0)),
+        coercion: Math.min(100, prev.coercion + (response.increments?.coercion || 0)),
+        financial: Math.min(100, prev.financial + (response.increments?.financial || 0)),
+        surveillance: Math.min(100, prev.surveillance + (response.increments?.surveillance || 0))
       };
-      setChatMessages(prev => [...prev, aiMsg]);
-    }, 1000);
+      const maxScore = Math.max(next.physical, next.coercion, next.financial, next.surveillance);
+      if (maxScore > 70 || next.physical > 40) setThreatLevel('SEVERE DANGER');
+      else if (maxScore > 35) setThreatLevel('MODERATE RISK');
+      else setThreatLevel('LOW RISK');
+      return next;
+    });
+    // Merge roadmap items, deduped
+    if (response.roadmap && response.roadmap.length) {
+      setSafetyRoadmap(prev => {
+        const existing = prev.map(i => i.text);
+        const unique = response.roadmap.filter(i => !existing.includes(i.text));
+        return unique.length ? [...unique, ...prev].slice(0, 6) : prev;
+      });
+    }
+    const aiMsg = { sender: 'ai', text: response.text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    setChatMessages(prev => [...prev, aiMsg]);
   };
 
   // --- Evidence Vault State & Logic ---
@@ -374,11 +337,24 @@ export default function UserDashboard() {
     setVaultProcessing(true);
 
     try {
-      // 1. Generate SHA-256 hash client-side
-      const buffer = await selectedFile.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      // 1. Generate SHA-256 hash client-side (with fallback)
+      let fileHash = '';
+      if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+        const buffer = await selectedFile.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } else {
+        // Fallback hashing for non-HTTPS environments
+        const buffer = await selectedFile.arrayBuffer();
+        const view = new DataView(buffer);
+        let hash = 0;
+        for (let i = 0; i < view.byteLength; i++) {
+          hash = (hash << 5) - hash + view.getUint8(i);
+          hash = hash & hash;
+        }
+        fileHash = 'fb_' + Math.abs(hash).toString(16) + '_' + selectedFile.size;
+      }
 
       // 2. Mock blockchain transaction commit
       setTimeout(() => {
@@ -494,7 +470,8 @@ export default function UserDashboard() {
   }
 
   return (
-    <div style={styles.dashboardContainer}>
+    <div className="dashboard-shell" style={styles.dashboardContainer}>
+      <DashboardBackground />
       {/* 2-Column Sidebar Layout */}
       <div style={styles.mainGrid}>
         
@@ -513,25 +490,27 @@ export default function UserDashboard() {
               title="View Profile Settings"
             >
               <div style={styles.profileAvatar}>
-                <User size={18} color="#a78bfa" />
+                <span style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--color-green-accent)' }}>
+                  {(currentUser?.username || 'abc')[0].toUpperCase()}
+                </span>
               </div>
               <div style={styles.profileDetails}>
-                <div style={styles.profileName}>{currentUser?.username || 'Amr'}</div>
-                <div style={styles.profileEmail}>{currentUser?.username || 'amr'}@gmail.com</div>
+                <div style={styles.profileName}>{currentUser?.username || 'abc'}</div>
+                <div style={styles.profileEmail}>{currentUser?.username || 'abc'}@gmail.com</div>
               </div>
             </div>
             {/* Quick Profile Actions */}
             <div style={{ display: 'flex', gap: '0.4rem', width: '100%', borderTop: '1px solid var(--color-clay-light)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
               <button onClick={toggleTheme} style={styles.profileActionBtn} title="Toggle Color Theme">
-                {theme === 'light' ? <Moon size={12} /> : <Sun size={12} />}
+                {theme === 'light' ? <Moon size={12} color="#ffffff" /> : <Sun size={12} color="#ffffff" />}
                 <span>Theme</span>
               </button>
-              <button onClick={handleQuickHide} style={{ ...styles.profileActionBtn, color: 'var(--color-terracotta)', fontWeight: 'bold' }} title="Camouflage decoy exit">
-                <BookOpen size={12} />
+              <button onClick={handleQuickHide} style={styles.profileActionBtn} title="Camouflage decoy exit">
+                <BookOpen size={12} color="#ffffff" />
                 <span>Hide</span>
               </button>
               <button onClick={handleLogout} style={styles.profileActionBtn} title="Lock Workspace">
-                <Lock size={12} />
+                <Lock size={12} color="#ffffff" />
                 <span>Lock</span>
               </button>
             </div>
@@ -543,7 +522,7 @@ export default function UserDashboard() {
               onClick={() => setActiveTab('overview')}
               style={{ ...styles.menuItem, ...(activeTab === 'overview' ? styles.menuItemActive : {}) }}
             >
-              <LayoutDashboard size={18} />
+              <LayoutDashboard size={18} color="#ffffff" />
               <span>Home</span>
             </button>
             
@@ -551,7 +530,7 @@ export default function UserDashboard() {
               onClick={() => setActiveTab('risk')}
               style={{ ...styles.menuItem, ...(activeTab === 'risk' ? styles.menuItemActive : {}) }}
             >
-              <Cpu size={18} />
+              <Cpu size={18} color="#ffffff" />
               <span>AI Abuse Engine</span>
             </button>
             
@@ -559,7 +538,7 @@ export default function UserDashboard() {
               onClick={() => setActiveTab('vault')}
               style={{ ...styles.menuItem, ...(activeTab === 'vault' ? styles.menuItemActive : {}) }}
             >
-              <Key size={18} />
+              <Key size={18} color="#ffffff" />
               <span>Evidence Lock Vault</span>
             </button>
             
@@ -567,101 +546,238 @@ export default function UserDashboard() {
               onClick={() => setActiveTab('plan')}
               style={{ ...styles.menuItem, ...(activeTab === 'plan' ? styles.menuItemActive : {}) }}
             >
-              <TrendingUp size={18} />
+              <TrendingUp size={18} color="#ffffff" />
               <span>Recovery Fund Rail</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('checklist')}
+              style={{ ...styles.menuItem, ...(activeTab === 'checklist' ? styles.menuItemActive : {}) }}
+            >
+              <Check size={18} color="#ffffff" />
+              <span>Exit Plan Checklist</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('support')}
+              style={{ ...styles.menuItem, ...(activeTab === 'support' ? styles.menuItemActive : {}) }}
+            >
+              <Users size={18} color="#ffffff" />
+              <span>Support Network</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
               style={{ ...styles.menuItem, ...(activeTab === 'settings' ? styles.menuItemActive : {}) }}
             >
-              <Settings size={18} />
+              <Settings size={18} color="#ffffff" />
               <span>Settings</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('help')}
+              style={{ ...styles.menuItem, ...(activeTab === 'help' ? styles.menuItemActive : {}) }}
+            >
+              <HelpCircle size={18} color="#ffffff" />
+              <span>Help & Resources</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              style={{ ...styles.menuItem, marginTop: '2.5rem', color: '#ff6b6b' }}
+              title="Logout of security portal"
+            >
+              <LogOut size={18} color="#ff6b6b" />
+              <span style={{ fontWeight: 'bold' }}>Log Out</span>
+            </button>
           </nav>
+
+          {/* Sidebar Footer Issue Badge */}
+          <div style={{ marginTop: 'auto', width: '100%' }}>
+            <div style={styles.sidebarIssueBadge}>
+              <span style={styles.issueNumber}>N</span>
+              <span style={styles.issueText}>1 Issue</span>
+              <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />
+            </div>
+          </div>
         </aside>
 
         {/* Console Content Screen (Right side) */}
         <main style={styles.consoleContent}>
           
+          {/* Universal Header Bar */}
+          <header style={styles.topHeader}>
+            <div>
+              <h1 style={styles.headerTitle}>Welcome back, {currentUser?.username || 'abc'}.</h1>
+              <p style={styles.headerSubtitle}>Your secure safety portal.</p>
+            </div>
+            <div style={styles.headerActions}>
+              <button onClick={toggleTheme} style={styles.headerThemeBtn} title="Toggle Theme Mode">
+                {theme === 'light' ? <Moon size={16} color="#ffffff" /> : <Sun size={16} color="#ffffff" />}
+              </button>
+              
+              <button onClick={handleQuickHide} style={styles.headerHideBtn} title="Quick Escape decoy swap">
+                <BookOpen size={14} color="#ffffff" />
+                <span>Hide Site</span>
+              </button>
+            </div>
+          </header>
+
           {/* Tab 1: Overview Console */}
           {activeTab === 'overview' && (
             <div style={styles.tabWrapper}>
-              <div style={styles.tabHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <LayoutDashboard size={24} style={styles.tabHeaderIcon} />
-                  <h1 style={styles.tabHeaderTitle}>Home</h1>
-                </div>
-                <p style={styles.tabHeaderSubtitle}>
-                  Welcome back, {currentUser?.username || 'Amr'}. Your secure safety portal.
-                </p>
-              </div>
 
               <div style={styles.overviewGrid}>
                 {/* Threat Level Summary */}
                 <div className="card" style={styles.overviewCard}>
                   <div style={styles.cardHeaderWithIcon}>
-                    <Cpu size={20} color="var(--color-forest)" />
+                    <Cpu size={20} color="#ffffff" />
                     <h3 style={styles.overviewCardTitle}>AI Threat Index</h3>
                   </div>
-                  <div style={styles.overviewMetric}>
-                    <div style={{ ...styles.threatLevelBadge, backgroundColor: threatLevel === 'SEVERE DANGER' ? 'var(--color-terracotta)' : 'var(--color-forest)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0.25rem 0' }}>
+                    <div style={{ 
+                      fontSize: '0.75rem', 
+                      fontWeight: '800', 
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                      color: '#10b981', 
+                      padding: '0.25rem 0.6rem', 
+                      borderRadius: '20px', 
+                      letterSpacing: '0.5px' 
+                    }}>
                       {threatLevel}
                     </div>
                   </div>
+                  {/* SVG line graph */}
+                  <svg viewBox="0 0 200 60" style={{ width: '100%', height: '50px', margin: '0.25rem 0' }}>
+                    <defs>
+                      <linearGradient id="chart-glow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.15"/>
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 10 45 Q 40 25, 80 38 T 140 20 T 190 10"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M 10 45 Q 40 25, 80 38 T 140 20 T 190 10 L 190 55 L 10 55 Z"
+                      fill="url(#chart-glow)"
+                    />
+                    <circle cx="190" cy="10" r="3" fill="#10b981" />
+                  </svg>
                   <p style={styles.overviewCardText}>
                     Active monitoring. Chat sandbox has recorded markers across Coercion ({threatMetrics.coercion}%) and Surveillance ({threatMetrics.surveillance}%).
                   </p>
-                  <button onClick={() => setActiveTab('risk')} className="btn btn-outline" style={{ marginTop: 'auto', width: '100%', fontSize: '0.85rem' }}>
-                    Open Threat Assessor
+                  <button onClick={() => setActiveTab('risk')} className="glass-btn">
+                    <span>Open Threat Assessor</span>
+                    <ChevronRight size={16} />
                   </button>
                 </div>
 
                 {/* Evidence Vault Summary */}
                 <div className="card" style={styles.overviewCard}>
                   <div style={styles.cardHeaderWithIcon}>
-                    <Key size={20} color="var(--color-forest)" />
+                    <Key size={20} color="#ffffff" />
                     <h3 style={styles.overviewCardTitle}>Tamper-Proof Certificates</h3>
                   </div>
-                  <div style={styles.overviewMetric}>
-                    <span style={styles.metricNumber}>{evidenceList.length}</span>
-                    <span style={styles.metricLabel}>Secured Files</span>
+                  <div style={styles.overviewMetricBig}>
+                    <span style={styles.metricBigNumber}>{evidenceList.length}</span>
+                    <span style={styles.metricBigLabel}>Secured Files</span>
                   </div>
                   <p style={styles.overviewCardText}>
                     Images, PDFs, or audio statements hashes committed to Sepolia testnet. Volatile memory clears on exit.
                   </p>
-                  <button onClick={() => setActiveTab('vault')} className="btn btn-outline" style={{ marginTop: 'auto', width: '100%', fontSize: '0.85rem' }}>
-                    Manage Evidence Vault
+                  <button onClick={() => setActiveTab('vault')} className="glass-btn">
+                    <span>Manage Evidence Vault</span>
+                    <ChevronRight size={16} />
                   </button>
                 </div>
 
                 {/* Recovery Checklist Summary */}
                 <div className="card" style={styles.overviewCard}>
                   <div style={styles.cardHeaderWithIcon}>
-                    <TrendingUp size={20} color="var(--color-forest)" />
+                    <TrendingUp size={20} color="#ffffff" />
                     <h3 style={styles.overviewCardTitle}>Exit Plan Checklist</h3>
                   </div>
-                  <div style={styles.overviewMetric}>
-                    <span style={styles.metricNumber}>{checklistPercentage}%</span>
-                    <span style={styles.metricLabel}>Done</span>
+                  <div style={styles.overviewMetricBig}>
+                    <span style={styles.metricBigNumber}>{checklistPercentage}%</span>
+                    <span style={styles.metricBigLabel}>Done</span>
                   </div>
                   <p style={styles.overviewCardText}>
                     {checkedCount} of {checklist.length} checklist items complete. Relocation deficit gap estimated at ${deficitGap}.
                   </p>
-                  <button onClick={() => setActiveTab('plan')} className="btn btn-outline" style={{ marginTop: 'auto', width: '100%', fontSize: '0.85rem' }}>
-                    Open Budget Planner
+                  <button onClick={() => setActiveTab('plan')} className="glass-btn">
+                    <span>Open Budget Planner</span>
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
 
-              {/* Warning Alert */}
-              <div style={styles.alertPanel}>
-                <AlertTriangle size={24} style={styles.alertIcon} />
-                <div>
-                  <h4 style={styles.alertTitle}>Device Safety Protocols</h4>
-                  <p style={styles.alertText}>
-                    This window maintains volatile state in RAM only. Closing the tab immediately destroys database cookies. Use the red <strong>QUICK ESCAPE</strong> button in the bottom right corner (or press <strong>ESC</strong> key) if an abuser approaches.
-                  </p>
+              {/* Status Row and Escape Card */}
+              <div style={styles.statusAndEscapeRow}>
+                {/* Horizontal status indicators */}
+                <div style={styles.statusBox}>
+                  {/* Indicator 1 */}
+                  <div style={styles.statusItem}>
+                    <Shield size={22} color="#ffffff" />
+                    <div>
+                      <div style={styles.statusItemTitle}>Stealth Mode Active</div>
+                      <div style={styles.statusItemText}>Your activity is hidden and protected.</div>
+                    </div>
+                  </div>
+                  
+                  <div style={styles.statusDivider}></div>
+                  
+                  {/* Indicator 2 */}
+                  <div style={styles.statusItem}>
+                    <Lock size={22} color="#ffffff" />
+                    <div>
+                      <div style={styles.statusItemTitle}>Evidence Protection Enabled</div>
+                      <div style={styles.statusItemText}>All evidence is encrypted and secure.</div>
+                    </div>
+                  </div>
+                  
+                  <div style={styles.statusDivider}></div>
+                  
+                  {/* Indicator 3 */}
+                  <div style={styles.statusItem}>
+                    <Activity size={22} color="#ffffff" />
+                    <div>
+                      <div style={styles.statusItemTitle}>SOS Routing Ready</div>
+                      <div style={styles.statusItemText}>Emergency dispatch is connected.</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quick Escape */}
+                <div style={styles.quickEscapeCard}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={styles.quickEscapeTitle}>Quick Escape</div>
+                    <div style={styles.quickEscapeText}>Press ESC anytime to exit safely.</div>
+                  </div>
+                  <div style={styles.escBadge}>ESC</div>
+                </div>
+              </div>
+
+              {/* Bottom Support Banner */}
+              <div style={styles.bottomBanner}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={styles.leafIconCircle}>
+                    <span style={{ fontSize: '1.2rem', color: '#10b981' }}>🌱</span>
+                  </div>
+                  <div>
+                    <div style={styles.bottomBannerTitle}>You are safe here.</div>
+                    <div style={styles.bottomBannerText}>TRACE is your silent guardian.</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                  <span style={styles.bottomBannerPhoneLabel}>Need Help Now? 1800-123-TRACE</span>
+                  <button onClick={triggerSosAlert} style={styles.bottomBannerPhoneBtn} title="Emergency SOS Signal">
+                    <Activity size={16} color="#ffffff" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -688,7 +804,7 @@ export default function UserDashboard() {
                     <span style={styles.encryptionBadge}>Encryption Active</span>
                   </div>
 
-                  <div style={styles.chatContainer}>
+                  <div style={styles.chatContainer} ref={chatContainerRef}>
                     {chatMessages.map((msg, index) => (
                       <div
                         key={index}
@@ -943,8 +1059,18 @@ export default function UserDashboard() {
                           </div>
                           
                           {/* Drag & Drop Box */}
-                          <div style={styles.dropZone}>
-                            <Upload size={32} color="var(--color-earth-muted)" style={{ marginBottom: '0.5rem' }} />
+                          <div 
+                            style={{
+                              ...styles.dropZone,
+                              borderColor: dragActive ? 'var(--color-green-accent)' : 'var(--color-clay)',
+                              backgroundColor: dragActive ? 'rgba(16, 185, 129, 0.05)' : 'var(--color-sand-light)'
+                            }}
+                            onDragEnter={handleDrag}
+                            onDragOver={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDrop={handleDrop}
+                          >
+                            <Upload size={32} color="#ffffff" style={{ marginBottom: '0.5rem' }} />
                             <span style={styles.dropZoneTitle}>Select or drop file</span>
                             <span style={styles.dropZoneSubtitle}>Images, PDF, or Audio (Max 15MB)</span>
                             <input
@@ -1489,7 +1615,7 @@ export default function UserDashboard() {
 
 const styles = {
   dashboardContainer: {
-    background: 'var(--dashboard-bg-gradient)',
+    background: 'transparent',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
@@ -1523,6 +1649,8 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 10,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
     transition: 'background-color 0.3s ease, border-color 0.3s ease',
   },
   sidebarLogo: {
@@ -1547,14 +1675,16 @@ const styles = {
     color: 'var(--dashboard-header-color)',
   },
   profileCard: {
-    backgroundColor: 'var(--color-white)',
-    border: '1px solid var(--color-clay-light)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: '12px',
     padding: '1rem',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: '0.75rem',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
     boxShadow: 'var(--shadow-sm)',
   },
   profileActionBtn: {
@@ -1563,8 +1693,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.25rem',
-    border: '1px solid var(--color-clay-light)',
-    backgroundColor: 'var(--color-sand-light)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     color: 'var(--color-earth-muted)',
     cursor: 'pointer',
     fontSize: '0.7rem',
@@ -1576,7 +1706,8 @@ const styles = {
     width: '38px',
     height: '38px',
     borderRadius: '50%',
-    backgroundColor: 'rgba(167, 139, 250, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1730,6 +1861,13 @@ const styles = {
     flexDirection: 'column',
     gap: '1rem',
     minHeight: '220px',
+    backgroundColor: 'var(--color-white)',
+    border: '1px solid var(--color-clay-light)',
+    borderRadius: '16px',
+    padding: '2rem',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
   },
   cardHeaderWithIcon: {
     display: 'flex',
@@ -2478,5 +2616,264 @@ const styles = {
     button: {
       flex: 1,
     },
+  },
+  // Universal Header Styles
+  topHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottom: '1px solid var(--color-clay-light)',
+    paddingBottom: '1.25rem',
+    marginBottom: '2rem',
+  },
+  headerTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '800',
+    color: '#ffffff',
+    margin: 0,
+  },
+  headerSubtitle: {
+    fontSize: '0.8rem',
+    color: 'var(--color-earth-muted)',
+    marginTop: '0.25rem',
+    margin: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
+  secureConnectionBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    color: '#e2e8f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    padding: '0.4rem 0.8rem',
+    borderRadius: '20px',
+  },
+  secureDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: '#10b981',
+    display: 'inline-block',
+  },
+  headerThemeBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--color-earth-muted)',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    width: '32px',
+    height: '32px',
+  },
+  headerHideBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.4rem 0.8rem',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.2)',
+    borderRadius: '20px',
+    color: '#ef4444',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+  headerLogoutBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.4rem 0.8rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '20px',
+    color: '#e2e8f0',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+  
+  // Issue badge footer
+  sidebarIssueBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    borderRadius: '30px',
+    padding: '0.5rem 1rem',
+    color: '#ef4444',
+    fontSize: '0.8rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  issueNumber: {
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    width: '18px',
+    height: '18px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.7rem',
+    fontWeight: '800',
+  },
+  issueText: {
+    fontSize: '0.75rem',
+  },
+
+  // Big Metric
+  overviewMetricBig: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '0.5rem',
+    margin: '0.75rem 0',
+  },
+  metricBigNumber: {
+    fontSize: '2.5rem',
+    fontWeight: '800',
+    color: '#ffffff',
+    lineHeight: '1',
+  },
+  metricBigLabel: {
+    fontSize: '0.8rem',
+    color: 'var(--color-earth-muted)',
+    fontWeight: '700',
+  },
+
+  // Status and Escape Layout
+  statusAndEscapeRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 280px',
+    gap: '1.5rem',
+    width: '100%',
+  },
+  statusBox: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'var(--color-white)',
+    border: '1px solid var(--color-clay-light)',
+    borderRadius: '16px',
+    padding: '1.25rem 2rem',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+  },
+  statusItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    flex: 1,
+  },
+  statusItemTitle: {
+    fontSize: '0.9rem',
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: '0.15rem',
+  },
+  statusItemText: {
+    fontSize: '0.75rem',
+    color: 'var(--color-earth-muted)',
+  },
+  statusDivider: {
+    width: '1px',
+    height: '40px',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    margin: '0 1.5rem',
+  },
+  quickEscapeCard: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    border: '1px solid rgba(16, 185, 129, 0.15)',
+    borderRadius: '16px',
+    padding: '1.25rem 1.5rem',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+  },
+  quickEscapeTitle: {
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  quickEscapeText: {
+    fontSize: '0.75rem',
+    color: 'var(--color-earth-muted)',
+  },
+  escBadge: {
+    fontSize: '0.8rem',
+    fontWeight: '800',
+    color: '#10b981',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '8px',
+  },
+
+  // Bottom Safe Banner
+  bottomBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'var(--color-white)',
+    border: '1px solid var(--color-clay-light)',
+    borderRadius: '16px',
+    padding: '1.25rem 2rem',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+    width: '100%',
+    marginTop: '0.5rem',
+  },
+  leafIconCircle: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomBannerTitle: {
+    fontSize: '0.9rem',
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: '0.15rem',
+  },
+  bottomBannerText: {
+    fontSize: '0.75rem',
+    color: 'var(--color-earth-muted)',
+  },
+  bottomBannerPhoneLabel: {
+    fontSize: '0.85rem',
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  bottomBannerPhoneBtn: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: '#10b981',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
   },
 };

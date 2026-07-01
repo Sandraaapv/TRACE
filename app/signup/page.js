@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, User, Key, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import DashboardBackground from '../components/DashboardBackground';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -57,7 +58,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div style={styles.pageContainer}>
+    <div className="dashboard-shell" style={styles.pageContainer}>
+      <DashboardBackground />
       {/* Quick Hide Button */}
       <button onClick={handleQuickHide} style={styles.quickHideBtn}>
         🌿 Quick Exit
@@ -230,7 +232,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: 'var(--color-sand)',
+    background: 'transparent',
     padding: '2rem',
     position: 'relative',
     fontFamily: 'var(--font-sans)',
@@ -251,10 +253,12 @@ const styles = {
     transition: 'var(--transition)',
   },
   formCard: {
-    backgroundColor: 'var(--color-white)',
+    backgroundColor: 'rgba(7,14,9,0.52)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 30px 0 rgba(80,200,120,0.04), inset 0 1px 0 rgba(255,255,255,0.05)',
     borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-clay-light)',
-    boxShadow: 'var(--shadow-lg)',
     padding: '2.5rem',
     width: '100%',
     maxWidth: '460px',

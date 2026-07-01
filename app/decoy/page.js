@@ -9,6 +9,7 @@ export default function DecoyPage() {
   const [hasLiked, setHasLiked] = useState(false);
 
   useEffect(() => {
+    document.title = 'Home Gardening Tips';
     // Push an extra state so there is an entry to pop when back is clicked
     window.history.pushState(null, null, window.location.href);
 

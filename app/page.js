@@ -139,20 +139,6 @@ export default function LandingPage() {
           {/* Nav items */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
 
-            {/* Secure connection pill */}
-            <FloatingBadge>
-              <span style={{
-                width: '7px', height: '7px', borderRadius: '50%',
-                backgroundColor: '#4ade80',
-                boxShadow: '0 0 8px 3px rgba(74,222,128,0.55)',
-                flexShrink: 0,
-                animation: 'pulse 2.4s ease-in-out infinite',
-              }} />
-              <span style={{ fontSize: '0.70rem', fontWeight: '700', letterSpacing: '0.4px', color: 'rgba(220,255,230,0.85)' }}>
-                secure connection
-              </span>
-            </FloatingBadge>
-
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
@@ -302,23 +288,7 @@ export default function LandingPage() {
               Enter Secure Console <ArrowRight size={18} />
             </Link>
 
-            {/* Footprint hint */}
-            <div style={{
-              marginTop:  '1.5rem',
-              display:    'flex',
-              alignItems: 'center',
-              gap:        '0.5rem',
-              fontSize:   '0.72rem',
-              color:      'rgba(255,255,255,0.35)',
-            }}>
-              <svg width="14" height="18" viewBox="0 0 14 18" fill="none" style={{ opacity: 0.5 }}>
-                <ellipse cx="7" cy="8" rx="5" ry="7" stroke="currentColor" strokeWidth="1.2"/>
-                <line x1="7" y1="15" x2="7" y2="18" stroke="currentColor" strokeWidth="1.2"/>
-              </svg>
-              Move your cursor along the path to leave&nbsp;
-              <span style={{ color: 'rgba(100,220,140,0.70)', fontWeight: '600' }}>footprints</span>
-              &nbsp;that fade away
-            </div>
+
           </div>
 
           {/* RIGHT: Safety Status floating glass card */}
